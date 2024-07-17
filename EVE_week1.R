@@ -12,4 +12,4 @@ m2 <- lm(LogonHours ~ CGender + CCareer + Uage_decile + CViolence + CCorp ,
 # formatted output
 stargazer(m1,m2,single.row = FALSE,type="text",omit.stat = "f",ci=F)
 
-summary(m1)
+summary(m1)456
