@@ -1,0 +1,33 @@
+---
+title: "BMSO 603 Group Project"
+author: "Alyssa Miller"
+date: "2024-07-17"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r set up, echo=TRUE}
+Performance <- read.csv("/Users/alyssamiller/Downloads/Student_performance_data _.csv")
+```
+
+This logistic model includes all of the independent variables except Student ID and GPA.
+```{r log model, echo=TRUE}
+model1 <- glm(GradeClass ~ Age + Gender + Ethnicity 
+              + ParentalEducation + StudyTimeWeekly + Absences + Tutoring 
+              + ParentalSupport + Extracurricular + Sports + Music + Volunteering
+              , data=Performance)
+summary(model1)
+```
+
+This logistic model includes the independent variables that were deemed statistically significant
+from the previous model. We define statistical significance as variables that have a
+p-value of 0.05 or less.
+```{r log model refined, echo=TRUE}
+model2 <- glm(GradeClass ~ StudyTimeWeekly + Absences + Tutoring + ParentalSupport
+              + Extracurricular + Sports + Music, data=Performance)
+summary(model2)
+```
+
