@@ -13,7 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 Performance <- read.csv("/Users/alyssamiller/Downloads/Student_performance_data _.csv")
 ```
 
-This logistic model includes all of the independent variables except Student ID and GPA.
+//This logistic model includes all of the independent variables except Student ID and GPA.
+
 ```{r log model, echo=TRUE}
 model1 <- glm(GradeClass ~ Age + Gender + Ethnicity 
               + ParentalEducation + StudyTimeWeekly + Absences + Tutoring 
@@ -22,9 +23,8 @@ model1 <- glm(GradeClass ~ Age + Gender + Ethnicity
 summary(model1)
 ```
 
-This logistic model includes the independent variables that were deemed statistically significant
-from the previous model. We define statistical significance as variables that have a
-p-value of 0.05 or less.
+//This logistic model includes the independent variables that were deemed statistically significant from the previous model. We define statistical significance as variables that have a p-value of 0.05 or less.
+
 ```{r log model refined, echo=TRUE}
 model2 <- glm(GradeClass ~ StudyTimeWeekly + Absences + Tutoring + ParentalSupport
               + Extracurricular + Sports + Music, data=Performance)
