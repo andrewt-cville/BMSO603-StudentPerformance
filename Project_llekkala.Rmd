@@ -59,11 +59,9 @@ plot(tree_model)
 text(tree_model, pretty = 0)
 
 # Normalize the data
-StudentTrain_scaled <- StudentTrain %>%
-  mutate(across(where(is.numeric), scale))
+StudentTrain_scaled <- StudentTrain %>% mutate(across(where(is.numeric), scale))
 
-StudentTest_scaled <- StudentTest %>%
-  mutate(across(where(is.numeric), scale))
+StudentTest_scaled <- StudentTest %>% mutate(across(where(is.numeric), scale))
 
 # KNN model
 knn_model <- kknn(GradeClass ~ ., train = StudentTrain_scaled, test = StudentTest_scaled, k = 5, distance = 2, kernel = "rectangular")
