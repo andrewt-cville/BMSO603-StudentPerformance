@@ -36,10 +36,7 @@ StudentTrain <- Student_performance_data[inTrain,]
 StudentTest <- Student_performance_data[-inTrain,]
 
 # Visualize the distribution of GradeClass
-ggplot(Student_performance_data, aes(x = GradeClass)) + 
-  geom_bar() +
-  theme_minimal() +
-  ggtitle("Distribution of Grade Classes")
+ggplot(Student_performance_data, aes(x = GradeClass)) + geom_bar() + theme_minimal() + ggtitle("Distribution of Grade Classes")
 
 # Visualize relationships between GPA and potential predictors
 ggplot(Student_performance_data, aes(x = StudyTimeWeekly, y = GPA)) + geom_point() + theme_minimal() + ggtitle("Study Time Weekly vs GPA")
