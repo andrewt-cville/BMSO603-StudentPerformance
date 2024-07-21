@@ -165,7 +165,7 @@ specificity_knn
 
 
 ##
-#Executive Summary
+#Executive Summary (sample)
 #This project aimed to identify the key factors predicting high school students' academic performance, measured by GradeClass, using logistic regression, decision tree, and KNN models. Our key findings are as follows:
 #- Finding 1: Study Time: Increased study time weekly is positively correlated with higher GradeClass, suggesting that consistent study habits are crucial for academic success.
 #- Finding 2: Parental Education: Higher levels of parental education are associated with higher GradeClass, indicating the influence of parental background on student performance.
