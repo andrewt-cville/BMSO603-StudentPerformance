@@ -1,0 +1,184 @@
+---
+title: "Project_llekkala"
+output: word_document
+date: "2024-07-21"
+---
+
+```{r}
+#libraries
+library(tidyverse)
+library(caret)
+library(randomForest)
+library(tree)
+library(class)
+library(kknn)
+
+
+Student_performance_data <- read_csv("C:/Users/saran/Downloads/Student_performance_data _.csv")
+
+# Convert categorical variables to factors
+Student_performance_data <- Student_performance_data %>%
+  mutate(Gender = as.factor(Gender),
+         Ethnicity = as.factor(Ethnicity),
+         ParentalEducation = as.factor(ParentalEducation),
+         Tutoring = as.factor(Tutoring),
+         ParentalSupport = as.factor(ParentalSupport),
+         Extracurricular = as.factor(Extracurricular),
+         Sports = as.factor(Sports),
+         Music = as.factor(Music),
+         Volunteering = as.factor(Volunteering),
+         GradeClass = as.factor(GradeClass))
+
+# Split the data into training (50%) and testing (50%) sets 
+set.seed(12345)
+inTrain <- sample(nrow(Student_performance_data), 0.5 * nrow(Student_performance_data))
+StudentTrain <- Student_performance_data[inTrain,]
+StudentTest <- Student_performance_data[-inTrain,]
+
+# Visualize the distribution of GradeClass
+ggplot(Student_performance_data, aes(x = GradeClass)) + 
+  geom_bar() +
+  theme_minimal() +
+  ggtitle("Distribution of Grade Classes")
+
+# Visualize relationships between GPA and potential predictors
+ggplot(Student_performance_data, aes(x = StudyTimeWeekly, y = GPA)) + geom_point() + theme_minimal() + ggtitle("Study Time Weekly vs GPA")
+
+ggplot(Student_performance_data, aes(x = Age, y = GPA)) + geom_point() + theme_minimal() + ggtitle("Age vs GPA")
+
+ggplot(Student_performance_data, aes(x = Gender, y = GPA)) + geom_boxplot() + theme_minimal() + ggtitle("Gender vs GPA")
+
+
+# Logistic regression model
+logistic_model <- glm(GradeClass ~ Age + Gender + Ethnicity + ParentalEducation + StudyTimeWeekly + Absences + Tutoring + ParentalSupport + Extracurricular + Sports + Music + Volunteering, data = StudentTrain, family = "binomial")
+
+summary(logistic_model)
+
+
+#Decision tree model
+tree_model <- tree(GradeClass ~ ., data = StudentTrain)
+
+plot(tree_model)
+text(tree_model, pretty = 0)
+
+# Normalize the data
+StudentTrain_scaled <- StudentTrain %>%
+  mutate(across(where(is.numeric), scale))
+
+StudentTest_scaled <- StudentTest %>%
+  mutate(across(where(is.numeric), scale))
+
+# KNN model
+knn_model <- kknn(GradeClass ~ ., train = StudentTrain_scaled, test = StudentTest_scaled, k = 5, distance = 2, kernel = "rectangular")
+
+summary(knn_model)
+
+
+
+### Make predictions
+# Logistic Regression Model
+logistic_model <- glm(GradeClass ~ Age + Gender + Ethnicity + ParentalEducation + StudyTimeWeekly + Absences + Tutoring + ParentalSupport + Extracurricular + Sports + Music + Volunteering, data = StudentTrain, family = "binomial")
+summary(logistic_model)
+
+# Predictions on the test set
+logistic_pred_prob <- predict(logistic_model, StudentTest, type = "response")
+logistic_pred_class <- ifelse(logistic_pred_prob > 0.5, "1", "0") 
+
+# Consistent levels
+logistic_pred_class <- factor(logistic_pred_class, levels = levels(StudentTest$GradeClass))
+
+# Confusion Matrix
+logistic_conf_matrix <- confusionMatrix(logistic_pred_class, StudentTest$GradeClass)
+print(logistic_conf_matrix)
+
+# Binary Sensitivity and Specificity Calculation
+positive_class <- "1" # Assuming "1" is the positive class
+
+StudentTest_binary <- StudentTest$GradeClass == positive_class
+logistic_pred_class_binary <- logistic_pred_class == positive_class
+
+sensitivity <- sensitivity(as.factor(logistic_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+specificity <- specificity(as.factor(logistic_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+
+sensitivity
+specificity
+
+# Decision Tree Model
+tree_model <- tree(GradeClass ~ ., data = StudentTrain)
+summary(tree_model)
+
+# Predictions on the test set
+tree_pred_class <- predict(tree_model, StudentTest, type = "class")
+
+# Consistent levels
+tree_pred_class <- factor(tree_pred_class, levels = levels(StudentTest$GradeClass))
+
+# Confusion Matrix
+tree_conf_matrix <- confusionMatrix(tree_pred_class, StudentTest$GradeClass)
+print(tree_conf_matrix)
+
+# Binary Sensitivity and Specificity Calculation
+tree_pred_class_binary <- tree_pred_class == positive_class
+
+sensitivity_tree <- sensitivity(as.factor(tree_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+specificity_tree <- specificity(as.factor(tree_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+
+sensitivity_tree
+specificity_tree
+
+# Random Forest Model
+rf_model <- randomForest(GradeClass ~ ., data = StudentTrain, importance = TRUE)
+summary(rf_model)
+
+# Predictions on the test set
+rf_pred_class <- predict(rf_model, StudentTest)
+
+# consistent levels
+rf_pred_class <- factor(rf_pred_class, levels = levels(StudentTest$GradeClass))
+
+# Confusion Matrix
+rf_conf_matrix <- confusionMatrix(rf_pred_class, StudentTest$GradeClass)
+print(rf_conf_matrix)
+
+# Binary Sensitivity and Specificity Calculation
+rf_pred_class_binary <- rf_pred_class == positive_class
+
+sensitivity_rf <- sensitivity(as.factor(rf_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+specificity_rf <- specificity(as.factor(rf_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+
+sensitivity_rf
+specificity_rf
+
+# KNN
+knn_pred_class <- knn(train = StudentTrain[ , -15], test = StudentTest[ , -15], cl = StudentTrain$GradeClass, k = 3)
+
+# consistent levels
+knn_pred_class <- factor(knn_pred_class, levels = levels(StudentTest$GradeClass))
+
+# Confusion Matrix
+knn_conf_matrix <- confusionMatrix(knn_pred_class, StudentTest$GradeClass)
+print(knn_conf_matrix)
+
+# Binary Sensitivity and Specificity Calculation
+knn_pred_class_binary <- knn_pred_class == positive_class
+
+sensitivity_knn <- sensitivity(as.factor(knn_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+specificity_knn <- specificity(as.factor(knn_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+
+sensitivity_knn
+specificity_knn
+
+
+##
+#Executive Summary
+#This project aimed to identify the key factors predicting high school students' academic performance, measured by GradeClass, using logistic regression, decision tree, and KNN models. Our key findings are as follows:
+#- Finding 1: Study Time: Increased study time weekly is positively correlated with higher GradeClass, suggesting that consistent study habits are crucial for academic success.
+#- Finding 2: Parental Education: Higher levels of parental education are associated with higher GradeClass, indicating the influence of parental background on student performance.
+#- Finding 3: Gender: There are significant differences in GradeClass between male and female students.
+#- Finding 4: Extracurricular Activities: Participation in extracurricular activities positively correlates with GradeClass, highlighting the benefits of a well-rounded education.
+#- Finding 5: Absences: Higher absenteeism negatively correlates with GradeClass, emphasizing the importance of regular attendance.
+
+#Based on these findings, we recommend improving study habits, encouraging parental involvement in education, promoting extracurricular activities, and addressing absenteeism to enhance student performance.
+
+```
+
