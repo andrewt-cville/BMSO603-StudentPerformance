@@ -1,0 +1,55 @@
+---
+title: "KNN Analysis"
+author: "Andrew Thornton"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(stargazer)
+library(class)
+source("functions.r")
+```
+
+```{r set up, echo=TRUE}
+Performance <- read.csv("Student_performance_data _.csv")
+```
+
+# Classification Models
+
+## K-Nearest Neighbor, trying to classify success (gradeclass = 0,1) through the independent variables in the dataset
+PART I: Prepping Data by defining a success as well as removing the fields we don't need
+``` {r}
+df = Performance
+df$Success = ifelse(df$GradeClass < 2, 1, 0)
+df$StudentID = NULL
+df$GPA = NULL
+df$GradeClass = NULL
+```
+
+PART II: Normalizing the data, finding index of our success column and breaking the data into 3 subsets
+``` {r}
+df[,1:12] = scale(df[,1:12])
+col_index = which(colnames(df) == 'Success')
+df_sets = subset_data(df, .6)
+
+dftrain = data.frame(df_sets[1])
+dfvalidation = data.frame(df_sets[2])
+dftest = data.frame(df_sets[3])
+```
+
+PART III: KNN Classification Models - finding best k then calculating error and RMSE for validation and test
+``` {r}
+kmax = 20
+bestK = best_k(kmax, dftrain, dfvalidation, dftest, col_index)
+
+pred.train <- knn(dftrain[,-col_index], dftrain[,-col_index],dftrain[,col_index], k=bestK)
+pred.val <- knn(dftrain[,-col_index], dfvalidation[,-col_index],dftrain[,col_index], k=bestK)
+pred.test <- knn(dftrain[,-col_index], dftest[,-col_index],dftrain[,col_index], k=bestK)
+
+(val.error = calculate_error_rate(dfvalidation, pred.val, col_index ))
+(test.error = calculate_error_rate(dftest, pred.test, col_index))
+
+#RMSE isn't accurate yet - have to adjust the functions file
+(val.rmse = calculate_r
