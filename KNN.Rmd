@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(stargazer)
 library(class)
 source("functions.r")
+source("data_model.r")
 ```
 
 ```{r set up, echo=TRUE}
@@ -21,16 +22,7 @@ Performance <- read.csv("Student_performance_data _.csv")
 ## K-Nearest Neighbor, trying to classify success (gradeclass = 0,1) through the independent variables in the dataset
 PART I: Prepping Data by defining a success as well as removing the fields we don't need
 ``` {r}
-df = Performance
-df$Success = ifelse(df$GradeClass < 2, 1, 0)
-df$StudentID = NULL
-df$GPA = NULL
-df$GradeClass = NULL
-```
-
-PART II: Normalizing the data, finding index of our success column and breaking the data into 3 subsets
-``` {r}
-df[,1:12] = scale(df[,1:12])
+df = get_data_scaled_with_success()
 col_index = which(colnames(df) == 'Success')
 df_sets = subset_data(df, .6)
 
@@ -50,6 +42,4 @@ pred.test <- knn(dftrain[,-col_index], dftest[,-col_index],dftrain[,col_index], 
 
 (val.error = calculate_error_rate(dfvalidation, pred.val, col_index ))
 (test.error = calculate_error_rate(dftest, pred.test, col_index))
-
-#RMSE isn't accurate yet - have to adjust the functions file
-(val.rmse = calculate_r
+```

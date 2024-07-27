@@ -1,0 +1,48 @@
+---
+title: "Example_Data_Model"
+author: "Andrew Thornton"
+date: "2024-07-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Model
+
+Using a separate data model allows us to abstract the processing of the data to ensure that everyone is using/cleaning the data in the same mannner.  If there's a mistake with this approach, then we only have to fix it in one spot. You load the data model in a similar method to how you load libraries, by including this at the top of your script.  Make sure your script is being run in the same directory as the data_model.R file as well as your source data file.  
+
+``` {r}
+source('data_model.R')
+```
+
+This simple data model currently supports 4 types of returned datasets, detailed below with an example:
+
+## get_data() - this is simply our source data with StudentID and GPA removed.  
+
+```{r}
+df_simple = get_data()
+head(df_simple)
+```
+
+## get_data_scaled() - this is our data set, except we are scaling all of the independent variables.  GradeClass remains as provided.
+
+```{r}
+df_scaled = get_data_scaled()
+head(df_scaled)
+```
+
+## get_data_with_success() - this is our data set, except we are removing the provided 'GradeClass' column and replacing it with a new 'Success' column.  'Success' will be true when GradeClass = 0,1 and that is already determined for you within the datamodel.  This data is NOT scaled.
+
+```{r}
+df_success = get_data_with_success()
+head(df_success)
+```
+
+## get_data_scaled_with_success() - this is our data set both scaled and with the Success column added, using the data definitions above.
+
+```{r}
+df_scaled_success = get_data_scaled_with_success()
+head(df_scaled_success)
+```
