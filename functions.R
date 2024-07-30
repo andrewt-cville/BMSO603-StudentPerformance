@@ -1,4 +1,4 @@
-subset_data = function (df, trainPct)
+subset_data_v = function (df, trainPct)
 {
   set.seed(4566)
   inTrain <- sample(nrow(df), 0.5*nrow(df))
@@ -6,6 +6,32 @@ subset_data = function (df, trainPct)
   dftrain <- data.frame(df[inTrain,])
   dftemp <- data.frame(df[-inTrain,])
   inVal <- sample(nrow(dftemp),trainPct*nrow(dftemp))
+  dfvalidation <- data.frame(dftemp[inVal,])
+  dftest <- data.frame(dftemp[-inVal,])
+  dftemp <- NULL
+  
+  return(list(dftrain, dfvalidation, dftest))
+}
+
+subset_data = function (df)
+{
+  set.seed(4566)
+  inTrain <- sample(nrow(df), 0.6 * nrow(df))
+  
+  dftrain <- data.frame(df[inTrain,])
+  dfvalidation <- data.frame(df[-inTrain,])
+  
+  return(list(dftrain, dfvalidation))
+}
+
+subset_data_with_test = function (df, trainPct, testPct)
+{
+  set.seed(4566)
+  inTrain <- sample(nrow(df), trainPct*nrow(df))
+  
+  dftrain <- data.frame(df[inTrain,])
+  dftemp <- data.frame(df[-inTrain,])
+  inVal <- sample(nrow(dftemp),testPct*nrow(dftemp))
   dfvalidation <- data.frame(dftemp[inVal,])
   dftest <- data.frame(dftemp[-inVal,])
   dftemp <- NULL

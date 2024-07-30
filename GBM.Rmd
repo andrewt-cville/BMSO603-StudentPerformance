@@ -1,0 +1,96 @@
+---
+title: "GBM"
+author: "Andrew Thornton"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Packages
+
+```{r}
+library(gbm)
+library(caret)
+library(tidyverse)
+source('Functions.r')
+source('Data_Model.r')
+```
+
+## Get and Subset Data
+```{r}
+df = data.frame(get_data())
+df_sets = subset_data_v(df, 0.6)
+StudentTrain = data.frame(df_sets[1])
+StudentTest = data.frame(df_sets[2])
+```
+
+## GBM Modeling
+``` {r}
+# Function to train GBM models in a one-vs-all approach
+train_gbm_one_vs_all <- function(data, target_var, classes, n_trees = 100, interaction_depth = 3, shrinkage = 0.1) {
+  models <- list()
+  for (class in classes) {
+    # Create a binary target variable for the current class
+    data$binary_target <- as.numeric(data[[target_var]] == class)
+    
+    # Train the GBM model
+    model <- gbm(binary_target ~ . -binary_target, data = data, distribution = "bernoulli",
+                 n.trees = n_trees, interaction.depth = interaction_depth, shrinkage = shrinkage, cv.folds = 5)
+    
+    # Save the model
+    models[[class]] <- model
+  }
+  return(models)
+}
+
+# Function to predict using the one-vs-all models
+predict_gbm_one_vs_all <- function(models, data) {
+  predictions <- data.frame(matrix(ncol = length(models), nrow = nrow(data)))
+  colnames(predictions) <- names(models)
+  
+  for (class in names(models)) {
+    model <- models[[class]]
+    predictions[[class]] <- predict(model, newdata = data, n.trees = gbm.perf(model, method = "cv"), type = "response")
+  }
+  
+  # Assign the class with the highest probability
+  predicted_classes <- colnames(predictions)[apply(predictions, 1, which.max)]
+  return(predicted_classes)
+}
+
+# Prepare the data
+classes <- levels(StudentTrain$GradeClass)
+
+## AK - These weren't originally commented out, but the code was failing as the fx seems to expect a factor
+## But the specificity and sensitivity seem off, so might need more investigation
+
+StudentTrain <- StudentTrain %>% mutate(GradeClass = as.character(GradeClass))
+StudentTest <- StudentTest %>% mutate(GradeClass = as.character(GradeClass))
+
+# Train the one-vs-all GBM models
+gbm_models <- train_gbm_one_vs_all(StudentTrain, target_var = "GradeClass", classes = classes)
+
+# Predict on the test set
+gbm_pred_class <- predict_gbm_one_vs_all(gbm_models, StudentTest)
+
+# Convert predictions to factor with correct levels
+gbm_pred_class <- factor(gbm_pred_class, levels = classes)
+
+# Evaluate the model
+confusion_matrix <- confusionMatrix(gbm_pred_class, factor(StudentTest$GradeClass, levels = classes))
+print(confusion_matrix)
+
+# Calculate binary sensitivity and specificity if needed
+positive_class <- "1" # Adjust this according to your actual positive class label
+StudentTest_binary <- StudentTest$GradeClass == positive_class
+gbm_pred_class_binary <- gbm_pred_class == positive_class
+
+sensitivity_gbm <- sensitivity(as.factor(gbm_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+specificity_gbm <- specificity(as.factor(gbm_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+
+sensitivity_gbm
+specificity_gbm
+```

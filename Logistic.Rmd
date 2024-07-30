@@ -1,0 +1,80 @@
+---
+title: "Logistic"
+author: "Andrew Thornton"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Packages
+```{r}
+library(caret)
+library(tidyverse)
+source('Functions.r')
+source('Data_Model.r')
+```
+
+## Get and Subset Data
+```{r}
+df = data.frame(get_data())
+df_sets = subset_data_v(df, 0.6)
+StudentTrain = data.frame(df_sets[1])
+StudentTest = data.frame(df_sets[2])
+```
+
+# Logistic Regression Model
+```{r}
+logistic_model <- glm(GradeClass ~ Age + Gender + Ethnicity + ParentalEducation + StudyTimeWeekly + Absences + Tutoring + ParentalSupport + Extracurricular + Sports + Music + Volunteering, data = StudentTrain, family = "binomial")
+summary(logistic_model)
+
+# Predictions on the test set
+logistic_pred_prob <- predict(logistic_model, StudentTest, type = "response")
+logistic_pred_class <- ifelse(logistic_pred_prob > 0.5, "1", "0") 
+
+# Consistent levels
+logistic_pred_class <- factor(logistic_pred_class, levels = levels(StudentTest$GradeClass))
+
+# Confusion Matrix
+logistic_conf_matrix <- confusionMatrix(logistic_pred_class, StudentTest$GradeClass)
+print(logistic_conf_matrix)
+
+# Binary Sensitivity and Specificity Calculation
+positive_class <- "1" # Assuming "1" is the positive class
+
+StudentTest_binary <- StudentTest$GradeClass == positive_class
+logistic_pred_class_binary <- logistic_pred_class == positive_class
+
+sensitivity <- sensitivity(as.factor(logistic_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+specificity <- specificity(as.factor(logistic_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+
+sensitivity
+specificity
+```
+
+## FROM 'BMSO 603 Final Project.RMD'
+``` {r}
+```{r set up, echo=TRUE}
+Performance <- read.csv("/Users/alyssamiller/Downloads/Student_performance_data _.csv")
+```
+
+//This logistic model includes all of the independent variables except Student ID and GPA.
+
+```{r log model, echo=TRUE}
+model1 <- glm(GradeClass ~ Age + Gender + Ethnicity 
+              + ParentalEducation + StudyTimeWeekly + Absences + Tutoring 
+              + ParentalSupport + Extracurricular + Sports + Music + Volunteering
+              , data=Performance)
+summary(model1)
+```
+
+//This logistic model includes the independent variables that were deemed statistically significant from the previous model. We define statistical significance as variables that have a p-value of 0.05 or less.
+
+```{r log model refined, echo=TRUE}
+model2 <- glm(GradeClass ~ StudyTimeWeekly + Absences + Tutoring + ParentalSupport
+              + Extracurricular + Sports + Music, data=Performance)
+summary(model2)
+```
+```
