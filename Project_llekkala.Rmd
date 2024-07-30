@@ -1,7 +1,7 @@
 ---
 title: "Project_llekkala"
 output: word_document
-date: "2024-07-21"
+date: "2024-07-29"
 ---
 
 ```{r}
@@ -57,6 +57,33 @@ tree_model <- tree(GradeClass ~ ., data = StudentTrain)
 
 plot(tree_model)
 text(tree_model, pretty = 0)
+
+summary(tree_model)
+
+
+# Pruned Decision tree
+
+# Fit the decision tree model
+tree_model <- tree(GradeClass ~ ., data = StudentTrain)
+
+# Perform cross-validation to find the optimal size of the tree
+cv_tree <- cv.tree(tree_model, FUN = prune.misclass)
+
+# Plot the cross-validation results
+plot(cv_tree$size, cv_tree$dev, type = "b", xlab = "Tree Size", ylab = "Deviance")
+
+# Find the optimal tree size that minimizes the deviance
+optimal_size <- cv_tree$size[which.min(cv_tree$dev)]
+
+# Prune the tree to the optimal size
+pruned_tree <- prune.misclass(tree_model, best = optimal_size)
+
+# Plot the pruned tree
+plot(pruned_tree)
+text(pruned_tree, pretty = 0)
+
+summary(pruned_tree)
+
 
 # Normalize the data
 StudentTrain_scaled <- StudentTrain %>% mutate(across(where(is.numeric), scale))
