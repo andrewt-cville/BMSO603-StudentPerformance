@@ -17,64 +17,76 @@ source('Functions.r')
 source('Data_Model.r')
 ```
 
-## Get and Subset Data
-```{r}
-df = data.frame(get_data())
-df_sets = subset_data_v(df, 0.6)
-StudentTrain = data.frame(df_sets[1])
-StudentTest = data.frame(df_sets[2])
+## Prepare Data
+```{r data prep, echo=TRUE}
+# Retrieve data
+df <- data.frame(get_data_with_success())
+
+# Subset data into train and test datasets
+df_sets <- subset_data(df)
+StudentTrain <- data.frame(df_sets[1])
+StudentTest <- data.frame(df_sets[2])
 ```
 
-# Logistic Regression Model
-```{r}
-logistic_model <- glm(GradeClass ~ Age + Gender + Ethnicity + ParentalEducation + StudyTimeWeekly + Absences + Tutoring + ParentalSupport + Extracurricular + Sports + Music + Volunteering, data = StudentTrain, family = "binomial")
-summary(logistic_model)
+## Logistic Regression Model
+```{r logistic, echo=TRUE}
+# Train model
+logistic_model1 <- glm(Success ~., data = StudentTrain, family = "binomial")
+summary(logistic_model1)
 
-# Predictions on the test set
-logistic_pred_prob <- predict(logistic_model, StudentTest, type = "response")
+# Generate predictions on the test set
+logistic_pred_prob <- predict(logistic_model1, StudentTest, type = "response")
 logistic_pred_class <- ifelse(logistic_pred_prob > 0.5, "1", "0") 
 
-# Consistent levels
-logistic_pred_class <- factor(logistic_pred_class, levels = levels(StudentTest$GradeClass))
+# Factor predictions for consistency
+logistic_pred_class <- factor(logistic_pred_class, levels = levels(StudentTest$Success))
 
-# Confusion Matrix
-logistic_conf_matrix <- confusionMatrix(logistic_pred_class, StudentTest$GradeClass)
-print(logistic_conf_matrix)
-
-# Binary Sensitivity and Specificity Calculation
-positive_class <- "1" # Assuming "1" is the positive class
-
-StudentTest_binary <- StudentTest$GradeClass == positive_class
-logistic_pred_class_binary <- logistic_pred_class == positive_class
-
-sensitivity <- sensitivity(as.factor(logistic_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
-specificity <- specificity(as.factor(logistic_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
-
-sensitivity
-specificity
+# Create confusion matrix
+(logistic_conf_matrix <- confusionMatrix(logistic_pred_class, StudentTest$Success))
 ```
 
-## FROM 'BMSO 603 Final Project.RMD'
-``` {r}
-```{r set up, echo=TRUE}
-Performance <- read.csv("/Users/alyssamiller/Downloads/Student_performance_data _.csv")
+```{r logistic revised, echo=TRUE}
+# Train model
+logistic_model2 <- glm(Success ~ StudyTimeWeekly + Absences + Tutoring + ParentalSupport
+                      + Sports + Music, data=StudentTrain, family="binomial")
+summary(logistic_model2)
+
+# Generate predictions on the test set
+logistic_pred_prob <- predict(logistic_model2, StudentTest, type = "response")
+logistic_pred_class <- ifelse(logistic_pred_prob > 0.5, "1", "0") 
+
+# Factor predictions for consistency
+logistic_pred_class <- factor(logistic_pred_class, levels = levels(StudentTest$Success))
+
+# Create confusion matrix
+(logistic_conf_matrix <- confusionMatrix(logistic_pred_class, StudentTest$Success))
 ```
+## Optimal Cutoff Value
+```{r cutoff, echo=TRUE}
+cutoff <- seq(0, 1, length = nrow(StudentTrain))
+acc <- numeric(nrow(StudentTrain))
+sen <- numeric(nrow(StudentTrain))
+spec <- numeric(nrow(StudentTrain))
 
-//This logistic model includes all of the independent variables except Student ID and GPA.
+Actual <- StudentTrain$Success
+predicted.probability.train <- predict(logistic_model1, type = "response") 
 
-```{r log model, echo=TRUE}
-model1 <- glm(GradeClass ~ Age + Gender + Ethnicity 
-              + ParentalEducation + StudyTimeWeekly + Absences + Tutoring 
-              + ParentalSupport + Extracurricular + Sports + Music + Volunteering
-              , data=Performance)
-summary(model1)
-```
+## Store values in a data frame
+acc.table <- data.frame(Cutoff = cutoff, ACCURACY = acc,SENSITIVITY = sen, SPECIFICITY = spec)
 
-//This logistic model includes the independent variables that were deemed statistically significant from the previous model. We define statistical significance as variables that have a p-value of 0.05 or less.
+for (i in 1:nrow(StudentTrain)) {
+  Predicted <- ifelse(predicted.probability.train > cutoff[i], "1", "0") 
+  Predicted <- factor(Predicted, levels = levels(StudentTest$Success))
+  
+  confusion <- table(Actual,Predicted)
+  acc.table$ACCURACY[i] <- (confusion[1,1]+confusion[2,2])/sum(confusion)
+  acc.table$SENSITIVITY[i] <- sum(predicted.probability.train > cutoff[i] & Actual == "1")/sum(Actual == "1")
+  acc.table$SPECIFICITY[i] <- sum(predicted.probability.train <= cutoff[i] & Actual == "0")/sum(Actual == "0")
+}
 
-```{r log model refined, echo=TRUE}
-model2 <- glm(GradeClass ~ StudyTimeWeekly + Absences + Tutoring + ParentalSupport
-              + Extracurricular + Sports + Music, data=Performance)
-summary(model2)
-```
+plot(ACCURACY ~ cutoff, data = acc.table, type = "o",xlab="Cutoff",ylab="Accuracy",col="blue",lty=2, ylim=c(0,1))
+lines(SENSITIVITY~cutoff,data = acc.table, type="o",col="green",lty=2)
+lines(SPECIFICITY~cutoff,data = acc.table, type="o",col="red",lty=2)
+z <- which.max(acc.table$ACCURACY)
+cutoff[z]
 ```

@@ -28,6 +28,21 @@ columns_to_factors = function (df)
   return(df)
 }
 
+factor_minus_gradeclass = function (df)
+{
+  df$Gender = as.factor(df$Gender)
+  df$Ethnicity = as.factor(df$Ethnicity)
+  df$ParentalEducation = as.factor(df$ParentalEducation)
+  df$Tutoring = as.factor(df$Tutoring)
+  df$ParentalSupport = as.factor(df$ParentalSupport)
+  df$Extracurricular = as.factor(df$Extracurricular)
+  df$Sports = as.factor(df$Sports)
+  df$Music = as.factor(df$Music)
+  df$Volunteering = as.factor(df$Volunteering)
+  
+  return(df)
+}
+
 introduce_success_column = function(df)
 {
   df$Success = ifelse(df$GradeClass < 2, 1, 0)
@@ -53,8 +68,11 @@ get_data = function()
 
 get_data_with_success = function()
 {
-  df = get_data()
+  df = load_data()
+  df = remove_columns(df)
+  df = factor_minus_gradeclass(df)
   df = introduce_success_column(df)
+  df$Success = as.factor(df$Success)
   return (df)
 }
 
@@ -67,8 +85,12 @@ get_data_scaled = function()
 
 get_data_scaled_with_success = function()
 {
-  df = get_data()
+  df = load_data()
+  df = remove_columns(df)
+  df = factor_minus_gradeclass(df)
   df = introduce_success_column(df)
+  df$Success = as.factor(df$Success)
   df = scale_columns(df)
   return(df)
 }
+
