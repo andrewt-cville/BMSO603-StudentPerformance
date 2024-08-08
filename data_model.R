@@ -67,7 +67,8 @@ get_data_scaled = function()
 
 get_data_scaled_with_success = function()
 {
-  df = get_data()
+  df = load_data()
+  df = remove_columns(df)
   df = introduce_success_column(df)
   df = scale_columns(df)
   return(df)
