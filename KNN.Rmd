@@ -13,10 +13,6 @@ source("functions.r")
 source("data_model.r")
 ```
 
-```{r set up, echo=TRUE}
-Performance <- read.csv("Student_performance_data _.csv")
-```
-
 # Classification Models
 
 ## K-Nearest Neighbor, trying to classify success (gradeclass = 0,1) through the independent variables in the dataset
@@ -24,7 +20,7 @@ PART I: Prepping Data by defining a success as well as removing the fields we do
 ``` {r}
 df = get_data_scaled_with_success()
 col_index = which(colnames(df) == 'Success')
-df_sets = subset_data(df, .6)
+df_sets = subset_data_with_test(df, .6, .5)
 
 dftrain = data.frame(df_sets[1])
 dfvalidation = data.frame(df_sets[2])
@@ -35,7 +31,7 @@ PART III: KNN Classification Models - finding best k then calculating error and 
 ``` {r}
 kmax = 20
 bestK = best_k(kmax, dftrain, dfvalidation, dftest, col_index)
-
+(bestK)
 pred.train <- knn(dftrain[,-col_index], dftrain[,-col_index],dftrain[,col_index], k=bestK)
 pred.val <- knn(dftrain[,-col_index], dfvalidation[,-col_index],dftrain[,col_index], k=bestK)
 pred.test <- knn(dftrain[,-col_index], dftest[,-col_index],dftrain[,col_index], k=bestK)

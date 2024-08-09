@@ -1,0 +1,41 @@
+---
+title: "Visualizations: Pre-Analysis"
+author: "Andrew Thornton"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r cars}
+library(caret)
+source('functions.r')
+source('data_model.r')
+```
+
+## Load and Subset Data
+
+``` {r}
+df = data.frame(get_data())
+df_sets = subset_data_v(df, 0.6)
+StudentTrain = data.frame(df_sets[1])
+StudentTest = data.frame(df_sets[2])
+```
+
+##Visualizations
+``` {r}
+# Visualize the distribution of GradeClass
+ggplot(df, aes(x = GradeClass)) + 
+  geom_bar() +
+  theme_minimal() +
+  ggtitle("Distribution of Grade Classes")
+
+# Visualize relationships between remaining predictors
+ggplot(df, aes(x = StudyTimeWeekly, y = as.numeric(GradeClass))) + geom_point() + theme_minimal() + ggtitle("Study Time Weekly vs GradeClass")
+
+ggplot(df, aes(x = Age, y = as.numeric(GradeClass))) + geom_point() + theme_minimal() + ggtitle("Age vs GradeClass")
+
+ggplot(df, aes(x = Gender, y = as.numeric(GradeClass))) + geom_boxplot() + theme_minimal() + ggtitle("Gender vs GradeClass")
+```
