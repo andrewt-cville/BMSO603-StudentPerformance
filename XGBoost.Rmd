@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(xgboost)
 library(e1071)
 library(caret)
+library(tidyverse)
 source('functions.r')
 source('data_model.r')
 ```
@@ -22,23 +23,49 @@ source('data_model.r')
 ## Load and Subset Data
 
 ``` {r}
+# Load and subset the data
 df = data.frame(get_data())
 df_sets = subset_data_v(df, 0.6)
-StudentTrain = data.frame(df_sets[1])
-StudentTest = data.frame(df_sets[2])
+StudentTrain = data.frame(df_sets[[1]])
+StudentTest = data.frame(df_sets[[2]])
+
+# Check the structure of the data to ensure it is loaded correctly
+str(StudentTrain)
+str(StudentTest)
 ```
 
 # Support Vector Machine (SVM)
 #SVMs are powerful for high-dimensional data classification.
-``` {r}
-svm_model <- svm(GradeClass ~ ., data = StudentTrain, kernel = "radial", probability = TRUE)
-svm_pred_class <- predict(svm_model, StudentTest, probability = TRUE)
-confusionMatrix(svm_pred_class, StudentTest$GradeClass)
 
-## THIS IS WHERE IT FAILS
+```{r}
+# Prepare data for SVM (SVM can handle factors directly)
+StudentTrain_SVM <- StudentTrain
+StudentTest_SVM <- StudentTest
 
-train_matrix <- xgb.DMatrix(data = as.matrix(StudentTrain[, -which(names(StudentTrain) == "GradeClass")]), label = as.numeric(StudentTrain$GradeClass) - 1)
-test_matrix <- xgb.DMatrix(data = as.matrix(StudentTest[, -which(names(StudentTest) == "GradeClass")]), label = as.numeric(StudentTest$GradeClass) - 1)
+# Train the SVM model
+svm_model <- svm(GradeClass ~ ., data = StudentTrain_SVM, kernel = "radial", probability = TRUE)
+
+# Make predictions on the test set
+svm_pred_class <- predict(svm_model, StudentTest_SVM, probability = TRUE)
+
+# Evaluate the model
+confusion_matrix_svm <- confusionMatrix(svm_pred_class, StudentTest_SVM$GradeClass)
+print(confusion_matrix_svm)
+
+# Calculate binary sensitivity and specificity if needed
+StudentTest_binary_svm <- StudentTest_SVM$GradeClass == positive_class
+svm_pred_class_binary <- svm_pred_class == positive_class
+
+sensitivity_svm <- sensitivity(as.factor(svm_pred_class_binary), as.factor(StudentTest_binary_svm), positive = "TRUE")
+specificity_svm <- specificity(as.factor(svm_pred_class_binary), as.factor(StudentTest_binary_svm), positive = "TRUE")
+
+sensitivity_svm
+specificity_svm
+```
+
+#xgboost
+
+```{r}
 
 # Ensure categorical variables are converted to factors
 StudentTrain <- StudentTrain %>% mutate(across(where(is.character), as.factor))
@@ -49,7 +76,7 @@ dmy <- dummyVars(" ~ .", data = StudentTrain)
 train_transformed <- data.frame(predict(dmy, newdata = StudentTrain))
 test_transformed <- data.frame(predict(dmy, newdata = StudentTest))
 
-# Convert the target variable to numeric
+# Convert the target variable to numeric for XGBoost
 train_transformed$GradeClass <- as.numeric(StudentTrain$GradeClass) - 1
 test_transformed$GradeClass <- as.numeric(StudentTest$GradeClass) - 1
 
