@@ -1,0 +1,137 @@
+---
+title: "Binary_Success"
+output: word_document
+date: "2024-08-13"
+---
+```{r}
+# Libraries
+library(tidyverse)
+library(caret)
+library(randomForest)
+library(tree)
+library(class)
+library(kknn)
+
+# Load the dataset
+Student_performance_data <- read_csv("C:/Users/saran/Downloads/Student_performance_data _.csv")
+
+# Convert categorical variables to factors
+Student_performance_data <- Student_performance_data %>%
+  mutate(Gender = as.factor(Gender),
+         Ethnicity = as.factor(Ethnicity),
+         ParentalEducation = as.factor(ParentalEducation),
+         Tutoring = as.factor(Tutoring),
+         ParentalSupport = as.factor(ParentalSupport),
+         Extracurricular = as.factor(Extracurricular),
+         Sports = as.factor(Sports),
+         Music = as.factor(Music),
+         Volunteering = as.factor(Volunteering),
+         GradeClass = as.factor(GradeClass))
+
+# Remove GPA from the dataset
+Student_performance_data <- Student_performance_data %>% select(-GPA)
+
+# Split the data into training (50%) and testing (50%) sets 
+set.seed(12345)
+inTrain <- sample(nrow(Student_performance_data), 0.5 * nrow(Student_performance_data))
+StudentTrain <- Student_performance_data[inTrain,]
+StudentTest <- Student_performance_data[-inTrain,]
+
+
+
+
+# Binary outcome variable (Success = GradeClass 3 or 4)
+StudentTrain$Success <- ifelse(StudentTrain$GradeClass %in% c(3, 4), "Success", "Fail")
+StudentTest$Success <- ifelse(StudentTest$GradeClass %in% c(3, 4), "Success", "Fail")
+
+# Ensure "Fail" is the first level and "Success" is the second level
+StudentTrain$Success <- factor(StudentTrain$Success, levels = c("Fail", "Success"))
+StudentTest$Success <- factor(StudentTest$Success, levels = c("Fail", "Success"))
+
+# Decision tree model using the binary outcome (Success)
+tree_model <- tree(Success ~ ., data = StudentTrain)
+
+# Plot the decision tree
+plot(tree_model)
+text(tree_model, pretty = 0)
+title("Decision Tree for Success")
+
+# Pruned Decision tree
+
+# Perform cross-validation to find the optimal size of the tree
+cv_tree <- cv.tree(tree_model, FUN = prune.misclass)
+
+# Plot the cross-validation results
+plot(cv_tree$size, cv_tree$dev, type = "b", xlab = "Tree Size", ylab = "Deviance")
+title("Cross-Validation for Optimal Tree Size")
+
+# Find the optimal tree size that minimizes the deviance
+optimal_size <- cv_tree$size[which.min(cv_tree$dev)]
+
+# Prune the tree to the optimal size
+pruned_tree <- prune.misclass(tree_model, best = optimal_size)
+
+# Plot the pruned tree
+plot(pruned_tree)
+text(pruned_tree, pretty = 0)
+title("Pruned Decision Tree for Success")
+
+# Predictions on the test set using the pruned tree
+tree_pred_class <- predict(pruned_tree, StudentTest, type = "class")
+saveRDS(tree_pred_class, file="tree_test.rds")
+
+# Consistent levels
+tree_pred_class <- factor(tree_pred_class, levels = levels(StudentTest$Success))
+
+# Confusion Matrix
+tree_conf_matrix <- confusionMatrix(tree_pred_class, StudentTest$Success)
+print(tree_conf_matrix)
+
+# Binary Sensitivity and Specificity Calculation
+tree_pred_class_binary <- tree_pred_class == "Success"
+StudentTest_binary <- StudentTest$Success == "Success"
+
+sensitivity_tree <- sensitivity(as.factor(tree_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+specificity_tree <- specificity(as.factor(tree_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+
+sensitivity_tree
+specificity_tree
+
+
+
+
+
+
+
+# Binary outcome variable (Success = GradeClass 3 or 4)
+StudentTrain$Success <- ifelse(StudentTrain$GradeClass %in% c(3, 4), "Success", "Fail")
+StudentTest$Success <- ifelse(StudentTest$GradeClass %in% c(3, 4), "Success", "Fail")
+
+# Ensure "Fail" is the first level and "Success" is the second level
+StudentTrain$Success <- factor(StudentTrain$Success, levels = c("Fail", "Success"))
+StudentTest$Success <- factor(StudentTest$Success, levels = c("Fail", "Success"))
+
+# Random Forest model using the binary outcome (Success)
+rf_model <- randomForest(Success ~ ., data = StudentTrain, mtry = sqrt(ncol(StudentTrain) - 1), importance = TRUE)
+
+# Plot the importance of variables
+varImpPlot(rf_model, main="Variable Importance in Random Forest")
+
+# Predictions on the test set
+rf_pred_class <- predict(rf_model, StudentTest)
+
+# Confusion Matrix and Metrics
+rf_conf_matrix <- confusionMatrix(rf_pred_class, StudentTest$Success)
+print(rf_conf_matrix)
+
+# Manual Binary Sensitivity and Specificity Calculation
+rf_pred_class_binary <- rf_pred_class == "Success"
+StudentTest_binary <- StudentTest$Success == "Success"
+
+sensitivity_rf <- sensitivity(as.factor(rf_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+specificity_rf <- specificity(as.factor(rf_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+
+sensitivity_rf
+specificity_rf
+```
+
