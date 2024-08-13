@@ -1,0 +1,56 @@
+---
+title: "Model Analysis"
+author: "Andrew Thornton"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+library(stargazer)
+library(class)
+source("functions.r")
+source("data_model.r")
+library(pROC)
+```
+Loading True Labels
+```{r}
+df = get_data_with_success()
+df_sets = subset_data_with_test(df, .6, .5)
+
+dftrain = data.frame(df_sets[1])
+dfvalidation = data.frame(df_sets[2])
+dftest = data.frame(df_sets[3])
+
+df_novalidation = get_data_with_success()
+df_sets_2 = subset_data(df_novalidation)
+dftrain_2 = data.frame(df_sets_2[1])
+dfvalidation_2 = data.frame(df_sets_2[2])
+```
+
+Loading Predictions
+``` {r}
+knn_train = readRDS(file = "knn_train.rds")
+knn_test = readRDS(file = "knn_test.rds")
+xgb_test = readRDS(file = "xgb_test.rds")
+tree_test = readRDS(file = "tree_test.rds")
+
+```
+
+``` {r}
+roc1 <- roc(dftrain$Success, as.numeric(knn_train), levels = rev(levels(dftrain$Success)))
+roc2 <- roc(dftest$Success, as.numeric(knn_test), levels = rev(levels(dftest$Success)))
+roc3 <- roc(dfvalidation_2$Success, as.numeric(xgb_test), levels = rev(levels(dfvalidation_2$Success)))
+roc4 <- roc(dfvalidation_2$Success, as.numeric(tree_test), levels = rev(levels(dfvalidation_2$Success)))
+
+plot(roc1, col = "blue", main = "ROC Curve Comparison", lwd = 2)
+plot(roc2, col = "red", add = TRUE, lwd = 2)
+plot(roc3, col = "orange", add = TRUE, lwd = 2)
+plot(roc4, col="yellow", add=TRUE, lwd = 2)
+```

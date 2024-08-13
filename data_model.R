@@ -87,7 +87,7 @@ get_data_scaled_with_success = function()
 {
   df = load_data()
   df = remove_columns(df)
-  df = factor_minus_gradeclass(df)
+  #df = factor_minus_gradeclass(df)
   df = introduce_success_column(df)
   df$Success = as.factor(df$Success)
   df = scale_columns(df)

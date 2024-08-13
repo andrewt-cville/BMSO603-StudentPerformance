@@ -19,9 +19,11 @@ source('data_model.r')
 
 ``` {r}
 df = data.frame(get_data())
-df_sets = subset_data_v(df, 0.6)
+df_sets = subset_data(df)
 StudentTrain = data.frame(df_sets[1])
 StudentTest = data.frame(df_sets[2])
+
+df$GradeClass = as.numeric(df$GradeClass) - 1
 ```
 
 ##Visualizations
@@ -38,4 +40,32 @@ ggplot(df, aes(x = StudyTimeWeekly, y = as.numeric(GradeClass))) + geom_point() 
 ggplot(df, aes(x = Age, y = as.numeric(GradeClass))) + geom_point() + theme_minimal() + ggtitle("Age vs GradeClass")
 
 ggplot(df, aes(x = Gender, y = as.numeric(GradeClass))) + geom_boxplot() + theme_minimal() + ggtitle("Gender vs GradeClass")
+```
+
+``` {r}
+plot(df$GradeClass ~ df$StudyTimeWeekly, xlab="Weekly Study Time", ylab="GradeClass", main="Grade Class by Study Hours")
+
+ggplot(df, aes(x = GradeClass, y = StudyTimeWeekly, fill = GradeClass)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of GradeClass by Study Time",
+       x = "Grade Class",
+       y = "Study Time") +
+  theme_minimal()
+
+absGrades = data.frame(
+    absence = 1:29,
+    average = 0
+)
+averages <- rep(1,29)
+absGrades$absence = 1:29
+for (i in 1:29) {
+  averages[i] = mean(df$GradeClass[df$Absences == i]) 
+}
+(averages)
+absGrades$average = averages  
+groups = c(0, 5, 10, 15, 20, 25, 30)
+hist(df$Absences, breaks=groups, xlab="Absences", main="Absences Distribution")
+lines(absGrades$average~absGrades$absence) #doesn't work since the scale is off
+
+plot(absGrades$average ~ absGrades$absence, xlab="Absences", ylab= "Grade Class (Avg)", main="Grade Class by Absence Count")
 ```

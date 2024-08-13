@@ -40,4 +40,7 @@ pred.test <- knn(dftrain[,-col_index], dftest[,-col_index],dftrain[,col_index], 
 
 (val.error = calculate_error_rate(dfvalidation, pred.val, col_index ))
 (test.error = calculate_error_rate(dftest, pred.test, col_index))
+
+saveRDS(pred.train, file = "knn_train.rds")
+saveRDS(pred.test, file = "knn_test.rds")
 ```

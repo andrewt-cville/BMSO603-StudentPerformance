@@ -25,7 +25,7 @@ source('data_model.r')
 ``` {r}
 # Load and subset the data
 df = data.frame(get_data())
-df_sets = subset_data_v(df, 0.6)
+df_sets = subset_data(df)
 StudentTrain = data.frame(df_sets[[1]])
 StudentTest = data.frame(df_sets[[2]])
 
@@ -96,6 +96,7 @@ xgb_model <- xgb.train(params, train_matrix, nrounds = 100)
 
 # Make predictions on the test set
 xgb_pred_class <- predict(xgb_model, test_matrix)
+saveRDS(xgb_pred_class, file="xgb_test.rds")
 
 # Convert predictions to factor with correct levels
 xgb_pred_class <- factor(xgb_pred_class, levels = 0:(length(unique(train_transformed$GradeClass)) - 1), labels = levels(StudentTrain$GradeClass))

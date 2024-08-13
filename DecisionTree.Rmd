@@ -22,7 +22,7 @@ source('Data_Model.r')
 ## Get and Subset Data
 ``` {r}
 df = data.frame(get_data())
-df_sets = subset_data_v(df, 0.6)
+df_sets = subset_data(df)
 StudentTrain = data.frame(df_sets[1])
 StudentTest = data.frame(df_sets[2])
 ```
@@ -62,6 +62,7 @@ NOTE - I think we want to shift this to predict against the pruned tree - right?
 ``` {r}
 # Predictions on the test set
 tree_pred_class <- predict(tree_model, StudentTest, type = "class")
+saveRDS(tree_pred_class, file="tree_test.rds")
 
 # Consistent levels
 tree_pred_class <- factor(tree_pred_class, levels = levels(StudentTest$GradeClass))
