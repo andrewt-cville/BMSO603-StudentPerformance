@@ -3,3 +3,4 @@
 *.pper
 .Rproj.user/*
 *.Rproj
+.Rproj.user

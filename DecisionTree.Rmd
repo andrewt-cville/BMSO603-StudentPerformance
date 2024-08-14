@@ -21,15 +21,16 @@ source('Data_Model.r')
 
 ## Get and Subset Data
 ``` {r}
-df = data.frame(get_data())
+df = get_data_with_success()
 df_sets = subset_data(df)
 StudentTrain = data.frame(df_sets[1])
 StudentTest = data.frame(df_sets[2])
 ```
 
 ``` {r}
+set.seed(456)
 # Decision tree model
-tree_model <- tree(GradeClass ~ ., data = StudentTrain)
+tree_model <- tree(Success ~ ., data = StudentTrain)
 
 plot(tree_model)
 text(tree_model, pretty = 0)
@@ -46,6 +47,7 @@ plot(cv_tree$size, cv_tree$dev, type = "b", xlab = "Tree Size", ylab = "Deviance
 
 # Find the optimal tree size that minimizes the deviance
 optimal_size <- cv_tree$size[which.min(cv_tree$dev)]
+(optimal_size)
 
 # Prune the tree to the optimal size
 pruned_tree <- prune.misclass(tree_model, best = optimal_size)
@@ -58,25 +60,14 @@ summary(pruned_tree)
 ```
 
 ## Predictions
-NOTE - I think we want to shift this to predict against the pruned tree - right?
 ``` {r}
 # Predictions on the test set
 tree_pred_class <- predict(tree_model, StudentTest, type = "class")
 saveRDS(tree_pred_class, file="tree_test.rds")
 
 # Consistent levels
-tree_pred_class <- factor(tree_pred_class, levels = levels(StudentTest$GradeClass))
+tree_pred_class <- factor(tree_pred_class, levels = levels(StudentTest$Success))
 
 # Confusion Matrix
-tree_conf_matrix <- confusionMatrix(tree_pred_class, StudentTest$GradeClass)
-print(tree_conf_matrix)
-
-# Binary Sensitivity and Specificity Calculation
-tree_pred_class_binary <- tree_pred_class == positive_class
-
-sensitivity_tree <- sensitivity(as.factor(tree_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
-specificity_tree <- specificity(as.factor(tree_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
-
-sensitivity_tree
-specificity_tree
+(confusionMatrix(tree_pred_class, StudentTest$Success))
 ```
