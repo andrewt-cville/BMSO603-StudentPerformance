@@ -47,7 +47,6 @@ plot(cv_tree$size, cv_tree$dev, type = "b", xlab = "Tree Size", ylab = "Deviance
 
 # Find the optimal tree size that minimizes the deviance
 optimal_size <- cv_tree$size[which.min(cv_tree$dev)]
-(optimal_size)
 
 # Prune the tree to the optimal size
 pruned_tree <- prune.misclass(tree_model, best = optimal_size)

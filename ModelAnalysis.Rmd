@@ -21,17 +21,19 @@ library(pROC)
 ```
 Loading True Labels
 ```{r}
+#For KNN Specifically
+df_knn = get_data_with_success()
+df_sets_knn = subset_data_with_test(df_knn, .6, .5)
+
+dftrain_knn = data.frame(df_sets_knn[1])
+dfvalidation_knn = data.frame(df_sets_knn[2])
+dftest_knn = data.frame(df_sets_knn[3])
+
+#For all other models
 df = get_data_with_success()
-df_sets = subset_data_with_test(df, .6, .5)
-
+df_sets = subset_data(df)
 dftrain = data.frame(df_sets[1])
-dfvalidation = data.frame(df_sets[2])
-dftest = data.frame(df_sets[3])
-
-df_novalidation = get_data_with_success()
-df_sets_2 = subset_data(df_novalidation)
-dftrain_2 = data.frame(df_sets_2[1])
-dfvalidation_2 = data.frame(df_sets_2[2])
+dftest = data.frame(df_sets[2])
 ```
 
 Loading Predictions
@@ -40,17 +42,26 @@ knn_train = readRDS(file = "knn_train.rds")
 knn_test = readRDS(file = "knn_test.rds")
 xgb_test = readRDS(file = "xgb_test.rds")
 tree_test = readRDS(file = "tree_test.rds")
-
+rforest_test = readRDS(file="rforest_test.rds")
+logistic_test = readRDS(file="logistic_test.rds")
+cluster = readRDS(file="cluster.rds")
 ```
 
 ``` {r}
-roc1 <- roc(dftrain$Success, as.numeric(knn_train), levels = rev(levels(dftrain$Success)))
-roc2 <- roc(dftest$Success, as.numeric(knn_test), levels = rev(levels(dftest$Success)))
-roc3 <- roc(dfvalidation_2$Success, as.numeric(xgb_test), levels = rev(levels(dfvalidation_2$Success)))
-roc4 <- roc(dfvalidation_2$Success, as.numeric(tree_test), levels = rev(levels(dfvalidation_2$Success)))
+#roc1 <- roc(dftrain_knn$Success, as.numeric(knn_train), levels = rev(levels(dftrain_knn$Success)))
+roc1 <- roc(dftest$Success, as.numeric(rforest_test), levels = rev(levels(dftest$Success)))
+roc2 <- roc(dftest_knn$Success, as.numeric(knn_test), levels = rev(levels(dftest_knn$Success)))
+roc3 <- roc(dftest$Success, as.numeric(xgb_test), levels = rev(levels(dftest$Success)))
+roc4 <- roc(dftest$Success, as.numeric(tree_test), levels = rev(levels(dftest$Success)))
+roc5 <- roc(dftest$Success, as.numeric(logistic_test), levels = rev(levels(dftest$Success)))
+roc6 <- roc(df$Success, as.numeric(cluster), levels = rev(levels(df$Success)))
 
 plot(roc1, col = "blue", main = "ROC Curve Comparison", lwd = 2)
 plot(roc2, col = "red", add = TRUE, lwd = 2)
 plot(roc3, col = "orange", add = TRUE, lwd = 2)
-plot(roc4, col="yellow", add=TRUE, lwd = 2)
+plot(roc4, col="pink", add=TRUE, lwd = 2)
+plot(roc5, col="green", add=TRUE, lwd = 2)
+plot(roc6, col="brown", add=TRUE, lwd=2)
+
+legend("bottomright", legend=c("Logistic", "KNN", "Decision Tree", "Random Forest", "XGB", "K-Means Clustering" ), col=c("green", "red", "pink", "blue", "orange", "brown"), lwd=2)
 ```

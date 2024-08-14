@@ -31,12 +31,16 @@ StudentTest <- data.frame(df_sets[2])
 ## Logistic Regression Model
 ```{r logistic, echo=TRUE}
 # Train model
+set.seed(456)
 logistic_model1 <- glm(Success ~., data = StudentTrain, family = "binomial")
 summary(logistic_model1)
 
 # Generate predictions on the test set
 logistic_pred_prob <- predict(logistic_model1, StudentTest, type = "response")
 logistic_pred_class <- ifelse(logistic_pred_prob > 0.5, "1", "0") 
+
+#Saves Predictions to .RDS file for use in ModelAnalysis
+saveRDS(logistic_pred_class, file="logistic_test.rds")
 
 # Factor predictions for consistency
 logistic_pred_class <- factor(logistic_pred_class, levels = levels(StudentTest$Success))

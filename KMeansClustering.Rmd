@@ -1,0 +1,48 @@
+---
+title: "K-MeansClustering"
+author: "Andrew Thornton"
+date: "2024-08-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Packages
+
+```{r}
+library(caret)
+library(tidyverse)
+source('Functions.r')
+source('Data_Model.r')
+library(factoextra)
+```
+
+## Get and Subset Data
+```{r}
+df = get_data_scaled()
+```
+
+## Generate Cluster Classification
+``` {r}
+set.seed(12345)
+km = kmeans(df, 5, nstart=20)
+(km$centers)
+df$Cluster = km$cluster -1
+```
+
+## Elbow method to find best K
+``` {r}
+fviz_nbclust(df, kmeans, method="wss")
+#Result is either 4 or 5
+```
+
+##Convert to "Success"
+```{r}
+df$Success = as.factor(ifelse(df$GradeClass < 2, 1, 0))
+df$Cluster = as.factor(ifelse(df$Cluster < 2, 1, 0))
+confusionMatrix(df$Success, df$Cluster)
+
+saveRDS(df$Cluster, "cluster.rds")
+```
