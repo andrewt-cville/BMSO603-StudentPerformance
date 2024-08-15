@@ -29,19 +29,19 @@ StudentTest = data.frame(df_sets[2])
 ##RF modeling
 ``` {r}
 set.seed(456)
-rf_model <- randomForest(Success ~ ., data = StudentTrain, mtry = sqrt(ncol(StudentTrain) - 1), importance = TRUE)
-importance(rf_model)
-varImpPlot(rf_model)
+bag_model <- randomForest(Success ~ ., data = StudentTrain, mtry = 13, importance = TRUE)
+importance(bag_model)
+varImpPlot(bag_model)
 
 # Predictions on the test set
-rf_pred_class <- predict(rf_model, StudentTest)
+bag_pred_class <- predict(bag_model, StudentTest)
 
 
 # Consistent levels
-rf_pred_class <- factor(rf_pred_class, levels = levels(StudentTest$Success))
-saveRDS(rf_pred_class, file="rforest_test.rds")
+bag_pred_class <- factor(bag_pred_class, levels = levels(StudentTest$Success))
+saveRDS(bag_pred_class, file="bagging_test.rds")
 
 # Confusion Matrix
-rf_conf_matrix <- confusionMatrix(rf_pred_class, StudentTest$Success)
-rf_conf_matrix
+bag_conf_matrix <- confusionMatrix(bag_pred_class, StudentTest$Success)
+bag_conf_matrix
 ```

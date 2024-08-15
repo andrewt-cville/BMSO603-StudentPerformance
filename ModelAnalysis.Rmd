@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 knitr::opts_chunk$set(echo = TRUE)
+library(randomForest)
 library(stargazer)
 library(class)
 source("functions.r")
@@ -45,6 +46,8 @@ tree_test = readRDS(file = "tree_test.rds")
 rforest_test = readRDS(file="rforest_test.rds")
 logistic_test = readRDS(file="logistic_test.rds")
 cluster = readRDS(file="cluster.rds")
+bag = readRDS(file="bagging_test.rds")
+gbm_test =readRDS(file="gbm_test.rds")
 ```
 
 ``` {r}
@@ -55,6 +58,8 @@ roc3 <- roc(dftest$Success, as.numeric(xgb_test), levels = rev(levels(dftest$Suc
 roc4 <- roc(dftest$Success, as.numeric(tree_test), levels = rev(levels(dftest$Success)))
 roc5 <- roc(dftest$Success, as.numeric(logistic_test), levels = rev(levels(dftest$Success)))
 roc6 <- roc(df$Success, as.numeric(cluster), levels = rev(levels(df$Success)))
+roc7 <- roc(dftest$Success, as.numeric(bag), levels = rev(levels(df$Success)))
+roc8 <- roc(dftest$Success, as.numeric(gbm_test), levels = rev(levels(df$Success)))
 
 plot(roc1, col = "blue", main = "ROC Curve Comparison", lwd = 2)
 plot(roc2, col = "red", add = TRUE, lwd = 2)
@@ -62,6 +67,19 @@ plot(roc3, col = "orange", add = TRUE, lwd = 2)
 plot(roc4, col="pink", add=TRUE, lwd = 2)
 plot(roc5, col="green", add=TRUE, lwd = 2)
 plot(roc6, col="brown", add=TRUE, lwd=2)
+plot(roc7, col="purple", add=TRUE, lwd=2)
+plot(roc8, col="black", add=TRUE, lwd=2)
 
-legend("bottomright", legend=c("Logistic", "KNN", "Decision Tree", "Random Forest", "XGB", "K-Means Clustering" ), col=c("green", "red", "pink", "blue", "orange", "brown"), lwd=2)
+legend("bottomright", legend=c("Logistic", "KNN", "Decision Tree", "Random Forest", "XGB", "K-Means Clustering", "Bagging", "GBM" ), col=c("green", "red", "pink", "blue", "orange", "brown", "purple", "black"), lwd=2)
+```
+
+```{r}
+auc(roc1)
+auc(roc2)
+auc(roc3)
+auc(roc4)
+auc(roc5)
+auc(roc6)
+auc(roc7)
+auc(roc8)
 ```
