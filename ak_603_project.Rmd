@@ -13,7 +13,6 @@ output: word_document
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-
 # Install and load necessary libraries
 install.packages("xgboost")
 install.packages("gbm")
@@ -104,7 +103,7 @@ test_transformed <- data.frame(predict(dmy, newdata = StudentTest))
 train_transformed$GradeClass <- as.factor(StudentTrain$GradeClass)
 test_transformed$GradeClass <- as.factor(StudentTest$GradeClass)
 
-# Set up cross-validation using caret
+# Set up k-fold cross-validation using caret
 train_control <- trainControl(method = "cv", number = 10)
 
 # Define the parameter grid
@@ -116,7 +115,7 @@ xgb_grid <- expand.grid(nrounds = 100,  # Number of boosting rounds
                         min_child_weight = 1,    # Minimum sum of instance weight (hessian) needed in a child
                         subsample = 0.8)         # Subsample ratio of the training instances
 
-# Train the XGBoost model with bagging (using caret)
+# Train the XGBoost model with k-fold cross-validation (using caret)
 xgb_model <- train(GradeClass ~ ., data = train_transformed,
                    method = "xgbTree",
                    trControl = train_control,
@@ -146,65 +145,92 @@ specificity_xgb <- specificity(as.factor(xgb_pred_class_binary), as.factor(Stude
 sensitivity_xgb
 specificity_xgb
 
-# McNemar's Test
-# Create a data frame with the actual and predicted labels from both models
-comparison <- data.frame(
-  Actual = StudentTest$GradeClass,
-  XGBoost = xgb_pred_class,
-  KNN = knn_pred_class
-)
+# Install and load necessary libraries if not already done
+if (!requireNamespace("gbm", quietly = TRUE)) install.packages("gbm")
+if (!requireNamespace("caret", quietly = TRUE)) install.packages("caret")
+library(gbm)
+library(caret)
 
-# Create a contingency table for McNemar's test
-# Note: Ensure that you only include the correct and incorrect predictions for both models
-xgb_correct <- comparison$XGBoost == comparison$Actual
-knn_correct <- comparison$KNN == comparison$Actual
-table_mcnemar <- table(xgb_correct, knn_correct)
+# First, let's examine the current levels of GradeClass
+print(levels(StudentTrain$GradeClass))
 
-# Perform McNemar's test
-mcnemar_test <- mcnemar.test(table_mcnemar)
-print(mcnemar_test$p.value)
-
-# Using GBM
-# Function to train GBM models in a one-vs-all approach
-train_gbm_one_vs_all <- function(data, target_var, classes, n_trees = 100, interaction_depth = 3, shrinkage = 0.1) {
-  models <- list()
-  for (class in classes) {
-    # Create a binary target variable for the current class
-    data$binary_target <- as.numeric(data[[target_var]] == class)
-    
-    # Train the GBM model
-    model <- gbm(binary_target ~ . -binary_target, data = data, distribution = "bernoulli",
-                 n.trees = n_trees, interaction.depth = interaction_depth, shrinkage = shrinkage, cv.folds = 5)
-    
-    # Save the model
-    models[[class]] <- model
-  }
-  return(models)
+# Function to make valid R variable names
+make_valid_names <- function(x) {
+  make.names(as.character(x), unique = TRUE)
 }
 
-# Function to predict using the one-vs-all models
-predict_gbm_one_vs_all <- function(models, data) {
-  predictions <- data.frame(matrix(ncol = length(models), nrow = nrow(data)))
-  colnames(predictions) <- names(models)
+# Apply the function to both training and test datasets
+StudentTrain$GradeClass <- factor(make_valid_names(StudentTrain$GradeClass))
+StudentTest$GradeClass <- factor(make_valid_names(StudentTest$GradeClass), levels = levels(StudentTrain$GradeClass))
+
+# Verify the new levels
+print(levels(StudentTrain$GradeClass))
+
+# Now proceed with the GBM modeling
+
+
+# Set up k-fold cross-validation
+set.seed(123)  # for reproducibility
+k_folds <- 5  # number of folds
+folds <- createFolds(StudentTrain$GradeClass, k = k_folds)
+
+# Function to train GBM model with cross-validation
+train_gbm_cv <- function(train_data, target_var, n_trees = 100, interaction_depth = 3, shrinkage = 0.1) {
+  formula <- as.formula(paste(target_var, "~ ."))
   
-  for (class in names(models)) {
-    model <- models[[class]]
-    predictions[[class]] <- predict(model, newdata = data, n.trees = gbm.perf(model, method = "cv"), type = "response")
-  }
+  model <- train(
+    formula,
+    data = train_data,
+    method = "gbm",
+    trControl = trainControl(
+      method = "cv",
+      number = k_folds,
+      classProbs = TRUE,
+      savePredictions = "final"
+    ),
+    verbose = FALSE,
+    tuneGrid = expand.grid(
+      n.trees = n_trees,
+      interaction.depth = interaction_depth,
+      shrinkage = shrinkage,
+      n.minobsinnode = 10
+    )
+  )
   
-  # Assign the class with the highest probability
-  predicted_classes <- colnames(predictions)[apply(predictions, 1, which.max)]
-  return(predicted_classes)
+  return(model)
 }
 
-# Ensure GradeClass is a factor for GBM
-StudentTrain <- StudentTrain %>% mutate(GradeClass = as.factor(GradeClass))
-StudentTest <- StudentTest %>% mutate(GradeClass = as.factor(GradeClass))
+# Train the GBM model with cross-validation
+gbm_model <- train_gbm_cv(StudentTrain, "GradeClass")
 
-# Prepare the data
-classes <- levels(StudentTrain$GradeClass)
+# Print model summary
+print(gbm_model)
 
-# Train the one-v
+# Make predictions on the test set
+gbm_pred_class <- predict(gbm_model, newdata = StudentTest)
+
+# Ensure predictions have the same levels as the original GradeClass
+gbm_pred_class <- factor(gbm_pred_class, levels = levels(StudentTest$GradeClass))
+
+# Evaluate the model
+confusion_matrix_gbm <- confusionMatrix(gbm_pred_class, StudentTest$GradeClass)
+print(confusion_matrix_gbm)
+
+# Calculate binary sensitivity and specificity
+# Note: You may need to adjust the positive_class based on your new level names
+positive_class <- levels(StudentTrain$GradeClass)[1]  # Adjust this if needed
+StudentTest_binary <- StudentTest$GradeClass == positive_class
+gbm_pred_class_binary <- gbm_pred_class == positive_class
+
+sensitivity_gbm <- sensitivity(as.factor(gbm_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+specificity_gbm <- specificity(as.factor(gbm_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+
+print(paste("GBM Sensitivity:", sensitivity_gbm))
+print(paste("GBM Specificity:", specificity_gbm))
+
+# Variable Importance
+var_imp <- varImp(gbm_model)
+# print(var_imp)
+plot(var_imp)
 
 ```
-
