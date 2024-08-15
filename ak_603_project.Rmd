@@ -1,0 +1,210 @@
+---
+title: "Project603"
+author: "Ashish Kondaka"
+date: "`r Sys.Date()`"
+output: word_document
+---
+title: "Project603"
+author: "Ashish Kondaka"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+# Install and load necessary libraries
+install.packages("xgboost")
+install.packages("gbm")
+install.packages("mltools")
+install.packages("e1071")
+install.packages("caret")
+install.packages("tidyverse")
+install.packages("class")
+library(xgboost)
+library(gbm)
+library(tidyverse)
+library(caret)
+library(class)
+library(e1071)
+library(mltools)
+
+Student_performance_data <- read_csv("/Users/ashishkondaka/Downloads/Student_performance_data _.csv")
+
+# Convert categorical variables to factors
+Student_performance_data <- Student_performance_data %>%
+  mutate(Gender = as.factor(Gender),
+         Ethnicity = as.factor(Ethnicity),
+         ParentalEducation = as.factor(ParentalEducation),
+         Tutoring = as.factor(Tutoring),
+         ParentalSupport = as.factor(ParentalSupport),
+         Extracurricular = as.factor(Extracurricular),
+         Sports = as.factor(Sports),
+         Music = as.factor(Music),
+         Volunteering = as.factor(Volunteering),
+         GradeClass = as.factor(GradeClass))
+
+# Split the data into training (50%) and testing (50%) sets 
+set.seed(12345)
+inTrain <- sample(nrow(Student_performance_data), 0.5 * nrow(Student_performance_data))
+StudentTrain <- Student_performance_data[inTrain,]
+StudentTest <- Student_performance_data[-inTrain,]
+
+# Visualize the distribution of GradeClass
+ggplot(Student_performance_data, aes(x = GradeClass)) + geom_bar() + theme_minimal() + ggtitle("Distribution of Grade Classes")
+
+# Visualize relationships between GPA and potential predictors
+ggplot(Student_performance_data, aes(x = StudyTimeWeekly, y = GPA)) + geom_point() + theme_minimal() + ggtitle("Study Time Weekly vs GPA")
+
+ggplot(Student_performance_data, aes(x = Age, y = GPA)) + geom_point() + theme_minimal() + ggtitle("Age vs GPA")
+
+ggplot(Student_performance_data, aes(x = Gender, y = GPA)) + geom_boxplot() + theme_minimal() + ggtitle("Gender vs GPA")
+
+# KNN
+knn_pred_class <- knn(train = StudentTrain[, -which(names(StudentTrain) == "GradeClass")], 
+                      test = StudentTest[, -which(names(StudentTest) == "GradeClass")], 
+                      cl = StudentTrain$GradeClass, k = 3)
+knn_pred_class <- factor(knn_pred_class, levels = levels(StudentTrain$GradeClass))
+
+# Consistent levels
+knn_pred_class <- factor(knn_pred_class, levels = levels(StudentTest$GradeClass))
+
+# Confusion Matrix
+knn_conf_matrix <- confusionMatrix(knn_pred_class, StudentTest$GradeClass)
+print(knn_conf_matrix)
+
+# Binary Sensitivity and Specificity Calculation
+positive_class <- "1" # Adjust this according to your actual positive class label
+knn_pred_class_binary <- knn_pred_class == positive_class
+StudentTest_binary <- StudentTest$GradeClass == positive_class
+
+sensitivity_knn <- sensitivity(as.factor(knn_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+specificity_knn <- specificity(as.factor(knn_pred_class_binary), as.factor(StudentTest_binary), positive = "TRUE")
+
+sensitivity_knn
+specificity_knn
+
+# Support Vector Machine (SVM)
+# SVMs are powerful for high-dimensional data classification.
+svm_model <- svm(GradeClass ~ ., data = StudentTrain, kernel = "radial", probability = TRUE)
+svm_pred_class <- predict(svm_model, StudentTest, probability = TRUE)
+confusionMatrix(svm_pred_class, StudentTest$GradeClass)
+
+# Ensure categorical variables are converted to factors
+StudentTrain <- StudentTrain %>% mutate(across(where(is.character), as.factor))
+StudentTest <- StudentTest %>% mutate(across(where(is.character), as.factor))
+
+# One-hot encode categorical variables
+dmy <- dummyVars(" ~ .", data = StudentTrain)
+train_transformed <- data.frame(predict(dmy, newdata = StudentTrain))
+test_transformed <- data.frame(predict(dmy, newdata = StudentTest))
+
+# Convert the target variable to factor for XGBoost
+train_transformed$GradeClass <- as.factor(StudentTrain$GradeClass)
+test_transformed$GradeClass <- as.factor(StudentTest$GradeClass)
+
+# Set up cross-validation using caret
+train_control <- trainControl(method = "cv", number = 10)
+
+# Define the parameter grid
+xgb_grid <- expand.grid(nrounds = 100,  # Number of boosting rounds
+                        max_depth = 3,  # Maximum depth of a tree
+                        eta = 0.1,      # Learning rate
+                        gamma = 0,      # Minimum loss reduction
+                        colsample_bytree = 0.8,  # Subsample ratio of columns
+                        min_child_weight = 1,    # Minimum sum of instance weight (hessian) needed in a child
+                        subsample = 0.8)         # Subsample ratio of the training instances
+
+# Train the XGBoost model with bagging (using caret)
+xgb_model <- train(GradeClass ~ ., data = train_transformed,
+                   method = "xgbTree",
+                   trControl = train_control,
+                   tuneGrid = xgb_grid,
+                   metric = "Accuracy")
+
+# Print the best model parameters
+print(xgb_model$bestTune)
+
+# Make predictions on the test set
+xgb_pred_class <- predict(xgb_model, newdata = test_transformed)
+
+# Convert predictions to factor with correct levels
+xgb_pred_class <- factor(xgb_pred_class, levels = levels(StudentTrain$GradeClass))
+
+# Evaluate the model
+confusion_matrix_xgb <- confusionMatrix(xgb_pred_class, StudentTest$GradeClass)
+print(confusion_matrix_xgb)
+
+# Calculate binary sensitivity and specificity if needed
+StudentTest_binary_xgb <- StudentTest$GradeClass == positive_class
+xgb_pred_class_binary <- xgb_pred_class == positive_class
+
+sensitivity_xgb <- sensitivity(as.factor(xgb_pred_class_binary), as.factor(StudentTest_binary_xgb), positive = "TRUE")
+specificity_xgb <- specificity(as.factor(xgb_pred_class_binary), as.factor(StudentTest_binary_xgb), positive = "TRUE")
+
+sensitivity_xgb
+specificity_xgb
+
+# McNemar's Test
+# Create a data frame with the actual and predicted labels from both models
+comparison <- data.frame(
+  Actual = StudentTest$GradeClass,
+  XGBoost = xgb_pred_class,
+  KNN = knn_pred_class
+)
+
+# Create a contingency table for McNemar's test
+# Note: Ensure that you only include the correct and incorrect predictions for both models
+xgb_correct <- comparison$XGBoost == comparison$Actual
+knn_correct <- comparison$KNN == comparison$Actual
+table_mcnemar <- table(xgb_correct, knn_correct)
+
+# Perform McNemar's test
+mcnemar_test <- mcnemar.test(table_mcnemar)
+print(mcnemar_test$p.value)
+
+# Using GBM
+# Function to train GBM models in a one-vs-all approach
+train_gbm_one_vs_all <- function(data, target_var, classes, n_trees = 100, interaction_depth = 3, shrinkage = 0.1) {
+  models <- list()
+  for (class in classes) {
+    # Create a binary target variable for the current class
+    data$binary_target <- as.numeric(data[[target_var]] == class)
+    
+    # Train the GBM model
+    model <- gbm(binary_target ~ . -binary_target, data = data, distribution = "bernoulli",
+                 n.trees = n_trees, interaction.depth = interaction_depth, shrinkage = shrinkage, cv.folds = 5)
+    
+    # Save the model
+    models[[class]] <- model
+  }
+  return(models)
+}
+
+# Function to predict using the one-vs-all models
+predict_gbm_one_vs_all <- function(models, data) {
+  predictions <- data.frame(matrix(ncol = length(models), nrow = nrow(data)))
+  colnames(predictions) <- names(models)
+  
+  for (class in names(models)) {
+    model <- models[[class]]
+    predictions[[class]] <- predict(model, newdata = data, n.trees = gbm.perf(model, method = "cv"), type = "response")
+  }
+  
+  # Assign the class with the highest probability
+  predicted_classes <- colnames(predictions)[apply(predictions, 1, which.max)]
+  return(predicted_classes)
+}
+
+# Ensure GradeClass is a factor for GBM
+StudentTrain <- StudentTrain %>% mutate(GradeClass = as.factor(GradeClass))
+StudentTest <- StudentTest %>% mutate(GradeClass = as.factor(GradeClass))
+
+# Prepare the data
+classes <- levels(StudentTrain$GradeClass)
+
+# Train the one-v
+
+```
+
