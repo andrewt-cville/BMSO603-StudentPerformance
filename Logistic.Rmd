@@ -39,9 +39,6 @@ summary(logistic_model1)
 logistic_pred_prob <- predict(logistic_model1, StudentTest, type = "response")
 logistic_pred_class <- ifelse(logistic_pred_prob > 0.5, "1", "0") 
 
-#Saves Predictions to .RDS file for use in ModelAnalysis
-saveRDS(logistic_pred_class, file="logistic_test.rds")
-
 # Factor predictions for consistency
 logistic_pred_class <- factor(logistic_pred_class, levels = levels(StudentTest$Success))
 
@@ -75,6 +72,9 @@ spec <- numeric(nrow(StudentTrain))
 Actual <- StudentTrain$Success
 predicted.probability.train <- predict(logistic_model1, type = "response") 
 
+#Saves Predictions to .RDS file for use in ModelAnalysis
+saveRDS(logistic_pred_class, file="rds/logistic_test.rds")
+
 ## Store values in a data frame
 acc.table <- data.frame(Cutoff = cutoff, ACCURACY = acc,SENSITIVITY = sen, SPECIFICITY = spec)
 
@@ -93,4 +93,25 @@ lines(SENSITIVITY~cutoff,data = acc.table, type="o",col="green",lty=2)
 lines(SPECIFICITY~cutoff,data = acc.table, type="o",col="red",lty=2)
 z <- which.max(acc.table$ACCURACY)
 cutoff[z]
+```
+
+```{r logistic revised with cutoff, echo=TRUE}
+set.seed(456)
+# Train model
+logistic_model2 <- glm(Success ~ StudyTimeWeekly + Absences + Tutoring + ParentalSupport
+                      + Sports + Music, data=StudentTrain, family="binomial")
+summary(logistic_model2)
+
+# Generate predictions on the test set
+logistic_pred_prob <- predict(logistic_model2, StudentTest, type = "response")
+logistic_pred_class <- ifelse(logistic_pred_prob > cutoff[z], "1", "0") 
+
+#Save Predictions
+saveRDS(logistic_pred_class, file="rds/logistic_test.rds")
+
+# Factor predictions for consistency
+logistic_pred_class <- factor(logistic_pred_class, levels = levels(StudentTest$Success))
+
+# Create confusion matrix
+(logistic_conf_matrix <- confusionMatrix(logistic_pred_class, StudentTest$Success))
 ```

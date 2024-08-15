@@ -43,7 +43,7 @@ summary(rf_pred_class)
 # Consistent levels
 rf_pred_class = ifelse(rf_pred_class > .5, 1, 0)
 rf_pred_class <- factor(rf_pred_class, levels = levels(StudentTest$Success))
-saveRDS(rf_pred_class, file="gbm_test.rds")
+saveRDS(rf_pred_class, file="rds/gbm_test.rds")
 
 # Confusion Matrix
 rf_conf_matrix <- confusionMatrix(rf_pred_class, StudentTest$Success)

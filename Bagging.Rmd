@@ -26,7 +26,7 @@ StudentTrain = data.frame(df_sets[1])
 StudentTest = data.frame(df_sets[2])
 ```
 
-##RF modeling
+##RF modeling with bagging
 ``` {r}
 set.seed(456)
 bag_model <- randomForest(Success ~ ., data = StudentTrain, mtry = 13, importance = TRUE)
@@ -39,7 +39,7 @@ bag_pred_class <- predict(bag_model, StudentTest)
 
 # Consistent levels
 bag_pred_class <- factor(bag_pred_class, levels = levels(StudentTest$Success))
-saveRDS(bag_pred_class, file="bagging_test.rds")
+saveRDS(bag_pred_class, file="rds/bagging_test.rds")
 
 # Confusion Matrix
 bag_conf_matrix <- confusionMatrix(bag_pred_class, StudentTest$Success)

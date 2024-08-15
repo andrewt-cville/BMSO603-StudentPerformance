@@ -24,95 +24,48 @@ source('data_model.r')
 
 ``` {r}
 # Load and subset the data
-df = data.frame(get_data())
+df = get_data()
+df$GradeClass = as.numeric(df$GradeClass) - 1
 df_sets = subset_data(df)
 StudentTrain = data.frame(df_sets[[1]])
 StudentTest = data.frame(df_sets[[2]])
 
-# Check the structure of the data to ensure it is loaded correctly
-str(StudentTrain)
-str(StudentTest)
-```
-
-# Support Vector Machine (SVM)
-#SVMs are powerful for high-dimensional data classification.
-
-```{r}
-# Prepare data for SVM (SVM can handle factors directly)
-StudentTrain_SVM <- StudentTrain
-StudentTest_SVM <- StudentTest
-
-# Train the SVM model
-svm_model <- svm(GradeClass ~ ., data = StudentTrain_SVM, kernel = "radial", probability = TRUE)
-
-# Make predictions on the test set
-svm_pred_class <- predict(svm_model, StudentTest_SVM, probability = TRUE)
-
-# Evaluate the model
-confusion_matrix_svm <- confusionMatrix(svm_pred_class, StudentTest_SVM$GradeClass)
-print(confusion_matrix_svm)
-
-# Calculate binary sensitivity and specificity if needed
-StudentTest_binary_svm <- StudentTest_SVM$GradeClass == positive_class
-svm_pred_class_binary <- svm_pred_class == positive_class
-
-sensitivity_svm <- sensitivity(as.factor(svm_pred_class_binary), as.factor(StudentTest_binary_svm), positive = "TRUE")
-specificity_svm <- specificity(as.factor(svm_pred_class_binary), as.factor(StudentTest_binary_svm), positive = "TRUE")
-
-sensitivity_svm
-specificity_svm
+train_matrix = sparse.model.matrix(GradeClass ~ ., data=StudentTrain)
+train_label = StudentTrain$GradeClass
+test_matrix = sparse.model.matrix(GradeClass ~ ., data=StudentTest)
+test_label = StudentTest$GradeClass
 ```
 
 #xgboost
 
 ```{r}
 
-# Ensure categorical variables are converted to factors
-StudentTrain <- StudentTrain %>% mutate(across(where(is.character), as.factor))
-StudentTest <- StudentTest %>% mutate(across(where(is.character), as.factor))
-
-# One-hot encode categorical variables
-dmy <- dummyVars(" ~ .", data = StudentTrain)
-train_transformed <- data.frame(predict(dmy, newdata = StudentTrain))
-test_transformed <- data.frame(predict(dmy, newdata = StudentTest))
-
-# Convert the target variable to numeric for XGBoost
-train_transformed$GradeClass <- as.numeric(StudentTrain$GradeClass) - 1
-test_transformed$GradeClass <- as.numeric(StudentTest$GradeClass) - 1
-
-# Create DMatrix for XGBoost
-train_matrix <- xgb.DMatrix(data = as.matrix(train_transformed[, -which(names(train_transformed) == "GradeClass")]), label = train_transformed$GradeClass)
-test_matrix <- xgb.DMatrix(data = as.matrix(test_transformed[, -which(names(test_transformed) == "GradeClass")]), label = test_transformed$GradeClass)
-
-# Set parameters for multi-class classification
 params <- list(
-  objective = "multi:softmax",
-  num_class = length(unique(train_transformed$GradeClass)),
-  eval_metric = "merror"
+  objective = "multi:softprob",
+  num_class = 5,
+  eta = 0.3,
+  max_depth = 6
 )
 
 # Train the XGBoost model
-xgb_model <- xgb.train(params, train_matrix, nrounds = 100)
+xgb_model <- xgboost(
+  params = params,
+  data = train_matrix,
+  label = train_label,
+  nrounds = 100
+)
 
-# Make predictions on the test set
-xgb_pred_class <- predict(xgb_model, test_matrix)
-saveRDS(xgb_pred_class, file="xgb_test.rds")
+xgb.plot.tree(model=xgb_model, trees=0)
+pred_probs = predict(xgb_model, test_matrix)
+#putting max class predicted into a matrix to compare to the labels
+pred_labels = max.col(matrix(pred_probs, ncol=5, byrow=TRUE)) -1
+saveRDS(pred_labels, file="rds/xgb_test.rds")
 
-# Convert predictions to factor with correct levels
-xgb_pred_class <- factor(xgb_pred_class, levels = 0:(length(unique(train_transformed$GradeClass)) - 1), labels = levels(StudentTrain$GradeClass))
+#Converting accuracy - can uncomment out confusion matrix if you want to see all classes
+#confusionMatrix(as.factor(pred_labels), as.factor(test_label))
 
-# Evaluate the model
-confusion_matrix_xgb <- confusionMatrix(xgb_pred_class, factor(StudentTest$GradeClass, levels = levels(StudentTrain$GradeClass)))
-print(confusion_matrix_xgb)
-
-# Calculate binary sensitivity and specificity if needed
-positive_class <- "1" # Adjust this according to your actual positive class label
-StudentTest_binary_xgb <- StudentTest$GradeClass == positive_class
-xgb_pred_class_binary <- xgb_pred_class == positive_class
-
-sensitivity_xgb <- sensitivity(as.factor(xgb_pred_class_binary), as.factor(StudentTest_binary_xgb), positive = "TRUE")
-specificity_xgb <- specificity(as.factor(xgb_pred_class_binary), as.factor(StudentTest_binary_xgb), positive = "TRUE")
-
-sensitivity_xgb
-specificity_xgb
+# Getting Binary classification predictions
+pred_labels_binary = factor(ifelse(pred_labels < 2, 1, 0), levels=c(1,0))
+test_labels_binary = factor(ifelse(test_label < 2, 1, 0), levels=c(1,0))
+confusionMatrix(pred_labels_binary, test_labels_binary)
 ```

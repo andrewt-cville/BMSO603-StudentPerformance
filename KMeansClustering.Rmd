@@ -44,5 +44,5 @@ df$Success = as.factor(ifelse(df$GradeClass < 2, 1, 0))
 df$Cluster = as.factor(ifelse(df$Cluster < 2, 1, 0))
 confusionMatrix(df$Success, df$Cluster)
 
-saveRDS(df$Cluster, "cluster.rds")
+saveRDS(df$Cluster, "rds/cluster.rds")
 ```

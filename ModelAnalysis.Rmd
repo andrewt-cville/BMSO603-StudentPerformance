@@ -39,19 +39,18 @@ dftest = data.frame(df_sets[2])
 
 Loading Predictions
 ``` {r}
-knn_train = readRDS(file = "knn_train.rds")
-knn_test = readRDS(file = "knn_test.rds")
-xgb_test = readRDS(file = "xgb_test.rds")
-tree_test = readRDS(file = "tree_test.rds")
-rforest_test = readRDS(file="rforest_test.rds")
-logistic_test = readRDS(file="logistic_test.rds")
-cluster = readRDS(file="cluster.rds")
-bag = readRDS(file="bagging_test.rds")
-gbm_test =readRDS(file="gbm_test.rds")
+knn_test = readRDS(file = "rds/knn_test.rds")
+xgb_test = readRDS(file = "rds/xgb_test.rds")
+tree_test = readRDS(file = "rds/tree_test.rds")
+rforest_test = readRDS(file="rds/rforest_test.rds")
+logistic_test = readRDS(file="rds/logistic_test.rds")
+cluster = readRDS(file="rds/cluster.rds")
+bag = readRDS(file="rds/bagging_test.rds")
+gbm_test =readRDS(file="rds/gbm_test.rds")
+svm = readRDS(file="rds/svm_test.rds")
 ```
 
 ``` {r}
-#roc1 <- roc(dftrain_knn$Success, as.numeric(knn_train), levels = rev(levels(dftrain_knn$Success)))
 roc1 <- roc(dftest$Success, as.numeric(rforest_test), levels = rev(levels(dftest$Success)))
 roc2 <- roc(dftest_knn$Success, as.numeric(knn_test), levels = rev(levels(dftest_knn$Success)))
 roc3 <- roc(dftest$Success, as.numeric(xgb_test), levels = rev(levels(dftest$Success)))
@@ -60,6 +59,7 @@ roc5 <- roc(dftest$Success, as.numeric(logistic_test), levels = rev(levels(dftes
 roc6 <- roc(df$Success, as.numeric(cluster), levels = rev(levels(df$Success)))
 roc7 <- roc(dftest$Success, as.numeric(bag), levels = rev(levels(df$Success)))
 roc8 <- roc(dftest$Success, as.numeric(gbm_test), levels = rev(levels(df$Success)))
+roc9 <- roc(dftest$Success, as.numeric(svm), levels=rev(levels(df$Success)))
 
 plot(roc1, col = "blue", main = "ROC Curve Comparison", lwd = 2)
 plot(roc2, col = "red", add = TRUE, lwd = 2)
@@ -69,8 +69,9 @@ plot(roc5, col="green", add=TRUE, lwd = 2)
 plot(roc6, col="brown", add=TRUE, lwd=2)
 plot(roc7, col="purple", add=TRUE, lwd=2)
 plot(roc8, col="black", add=TRUE, lwd=2)
+plot(roc9, col="yellow", add=TRUE, lwd=2)
 
-legend("bottomright", legend=c("Logistic", "KNN", "Decision Tree", "Random Forest", "XGB", "K-Means Clustering", "Bagging", "GBM" ), col=c("green", "red", "pink", "blue", "orange", "brown", "purple", "black"), lwd=2)
+legend("bottomright", legend=c("Logistic", "KNN", "Decision Tree", "Random Forest", "XGB", "K-Means Clustering", "Bagging", "GBM", "SVM" ), col=c("green", "red", "pink", "blue", "orange", "brown", "purple", "black", "yellow"), lwd=2)
 ```
 
 ```{r}
@@ -82,4 +83,5 @@ auc(roc5)
 auc(roc6)
 auc(roc7)
 auc(roc8)
+auc(roc9)
 ```

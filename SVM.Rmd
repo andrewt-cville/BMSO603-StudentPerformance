@@ -1,0 +1,55 @@
+---
+title: "SVM"
+author: "Andrew Thornton"
+date: "2024-08-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Packages
+
+```{r }
+library(xgboost)
+library(e1071)
+library(caret)
+library(tidyverse)
+source('functions.r')
+source('data_model.r')
+```
+
+## Load the Data
+
+```{r }
+df = get_data()
+df_sets = subset_data(df)
+StudentTrain = data.frame(df_sets[[1]])
+StudentTest = data.frame(df_sets[[2]])
+```
+
+#Run SVM Model
+#SVMs are powerful for high-dimensional data classification.
+```{r}
+set.seed(456)
+# Prepare data for SVM (SVM can handle factors directly)
+StudentTrain_SVM <- StudentTrain
+StudentTest_SVM <- StudentTest
+
+# Train the SVM model
+svm_model <- svm(GradeClass ~ ., data = StudentTrain_SVM, kernel = "radial", probability = TRUE)
+
+# Make predictions on the test set
+svm_pred_class <- predict(svm_model, StudentTest_SVM, probability = TRUE)
+
+
+# Evaluate the model with classification confusion
+#confusionMatrix(svm_pred_class, StudentTest_SVM$GradeClass)
+
+pred_labels_binary = factor(ifelse(as.numeric(svm_pred_class)-1 < 2, 1, 0), levels=c(1,0))
+saveRDS(pred_labels_binary, file="rds/svm_test.rds")
+
+test_labels_binary = factor(ifelse(as.numeric(StudentTest$GradeClass)-1 < 2, 1, 0), levels=c(1,0))
+confusionMatrix(pred_labels_binary, test_labels_binary )
+```

@@ -62,7 +62,7 @@ summary(pruned_tree)
 ``` {r}
 # Predictions on the test set
 tree_pred_class <- predict(tree_model, StudentTest, type = "class")
-saveRDS(tree_pred_class, file="tree_test.rds")
+saveRDS(tree_pred_class, file="rds/tree_test.rds")
 
 # Consistent levels
 tree_pred_class <- factor(tree_pred_class, levels = levels(StudentTest$Success))
