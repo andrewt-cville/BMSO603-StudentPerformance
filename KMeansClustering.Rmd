@@ -30,12 +30,17 @@ set.seed(12345)
 km = kmeans(df, 5, nstart=20)
 (km$centers)
 df$Cluster = km$cluster -1
+
+fviz_cluster(km, data = df[, -13], 
+             ellipse.type = "convex", 
+             geom = "point", 
+             main = "K-Means Clustering")
 ```
 
 ## Elbow method to find best K
 ``` {r}
 fviz_nbclust(df, kmeans, method="wss")
-#Result is either 4 or 5
+#Result is either 4 or 5, already set to 5 above
 ```
 
 ##Convert to "Success"
@@ -43,6 +48,8 @@ fviz_nbclust(df, kmeans, method="wss")
 df$Success = as.factor(ifelse(df$GradeClass < 2, 1, 0))
 df$Cluster = as.factor(ifelse(df$Cluster < 2, 1, 0))
 confusionMatrix(df$Success, df$Cluster)
+
+
 
 saveRDS(df$Cluster, "rds/cluster.rds")
 ```

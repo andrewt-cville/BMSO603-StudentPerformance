@@ -115,3 +115,8 @@ logistic_pred_class <- factor(logistic_pred_class, levels = levels(StudentTest$S
 # Create confusion matrix
 (logistic_conf_matrix <- confusionMatrix(logistic_pred_class, StudentTest$Success))
 ```
+
+``` {r}
+
+
+```

@@ -57,10 +57,12 @@ xgb_model <- xgboost(
 
 xgb.plot.tree(model=xgb_model, trees=0)
 pred_probs = predict(xgb_model, test_matrix)
+summary(pred_probs)
 #putting max class predicted into a matrix to compare to the labels
 pred_labels = max.col(matrix(pred_probs, ncol=5, byrow=TRUE)) -1
-saveRDS(pred_labels, file="rds/xgb_test.rds")
 
+saveRDS(pred_labels, file="rds/xgb_test.rds")
+xgb.plot.multi.trees(xgb_model, trees=0:1)
 #Converting accuracy - can uncomment out confusion matrix if you want to see all classes
 #confusionMatrix(as.factor(pred_labels), as.factor(test_label))
 
@@ -68,4 +70,6 @@ saveRDS(pred_labels, file="rds/xgb_test.rds")
 pred_labels_binary = factor(ifelse(pred_labels < 2, 1, 0), levels=c(1,0))
 test_labels_binary = factor(ifelse(test_label < 2, 1, 0), levels=c(1,0))
 confusionMatrix(pred_labels_binary, test_labels_binary)
+
+xgb.plot.importance(xgb.importance(model=xgb_model))
 ```
