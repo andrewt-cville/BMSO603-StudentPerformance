@@ -116,7 +116,36 @@ logistic_pred_class <- factor(logistic_pred_class, levels = levels(StudentTest$S
 (logistic_conf_matrix <- confusionMatrix(logistic_pred_class, StudentTest$Success))
 ```
 
+#Decision Boundary
 ``` {r}
+# Decision Boundary
 
+# Select relevant columns for 2D visualization
+StudentTrain2D <- StudentTrain %>% select(StudyTimeWeekly, Absences, Success)
+
+# Train the logistic regression model with two features
+logistic_model_2D <- glm(Success ~ StudyTimeWeekly + Absences, data = StudentTrain2D, family = "binomial")
+
+# Create a grid of values for the features
+x_min <- min(StudentTrain2D$StudyTimeWeekly) - 1
+x_max <- max(StudentTrain2D$StudyTimeWeekly) + 1
+y_min <- min(StudentTrain2D$Absences) - 1
+y_max <- max(StudentTrain2D$Absences) + 1
+
+grid <- expand.grid(StudyTimeWeekly = seq(x_min, x_max, length.out = 100),
+                    Absences = seq(y_min, y_max, length.out = 100))
+
+# Predict on the grid
+grid$Success <- predict(logistic_model_2D, newdata = grid, type = "response")
+grid$Success <- ifelse(grid$Success > 0.5, "1", "0")
+grid$Success <- as.factor(grid$Success)
+
+# Plot the decision boundary
+ggplot(StudentTrain2D, aes(x = StudyTimeWeekly, y = Absences)) +
+    geom_point(aes(color = Success)) +
+    geom_contour(data = grid, aes(z = as.numeric(Success)), bins = 1, color = "black") +
+    labs(title = "Decision Boundary for Logistic Regression",
+         x = "Study Time Weekly",
+         y = "Absences")
 
 ```
